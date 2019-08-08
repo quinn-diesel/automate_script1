@@ -1,0 +1,47 @@
+{
+    "field": "createListing",
+    "arguments": {
+        "input": {
+            "address": {
+                "id": "ChIJH4Lgy3ds1moR1HtiAaWXi-k1",
+                "addressLow": "445",
+                "fullAddress": "445 Warrigal Road, Heatherton VIC, Australia",
+                "locality": "Kingston City",
+                "postcode": "3202",
+                "state": "VIC",
+                "streetName": "Warrigal Road",
+                "address1": "445 Warrigal Road",
+                "suburb": "Heatherton",
+                "location": {
+                    "lat": -37.9468163,
+                    "lon": 145.07899980000002
+                },
+                "country": "Australia",
+                "countryCode": "AU"
+            },
+            "contacts": [
+                {
+                    "id": "c4fb5b75-2fed-4db2-ba05-4dc5a3cfb0a4",
+                    "firstName": "Shiva Reddy ",
+                    "lastName": "Varkala",
+                    "email": "v_shiva@ljx.com.au",
+                    "mobile": "9160750840",
+                    "phone": "9160750840"
+                }
+            ],
+            "primaryAgent": ""
+        }
+    },
+    "identity": {
+        "username": "Google_106600641818143500761",
+        "claims": {
+            "email": "ajeya@ljx.com.au",
+            "custom:office": "corp",
+            "custom:manager": "",
+            "custom:team": "engineering",
+            "cognito:groups": [
+                "agents-group"
+            ]
+        }
+    }
+}

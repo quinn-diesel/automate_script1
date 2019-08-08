@@ -1,0 +1,11 @@
+dynamo:
+  table:
+    ReadCapacityUnits: 1
+    WriteCapacityUnits: 1
+    AutoScalingEnabled: false
+    PointInTimeRecoveryEnabled: false
+  index:
+    ReadCapacityUnits: 1
+    WriteCapacityUnits: 1
+es:
+  url: "${aws:ess:agent-avnu-dev:Endpoint}"
