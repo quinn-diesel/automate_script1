@@ -1,0 +1,33 @@
+{
+  "name": "@ljxau/avnu-core-backend",
+  "private": true,
+  "devDependencies": {
+    "husky": "^2.4.1",
+    "lerna": "^3.15.0",
+    "lint-staged": "^8.2.1"
+  },
+  "scripts": {
+    "package": "lerna run package --concurrency 3",
+    "deploy": "lerna run deploy --concurrency 3",
+    "deploy:staging": "lerna run deploy:staging --concurrency 3",
+    "deploy:production": "lerna run deploy:production --concurrency 3",
+    "test": "lerna run tests -- --passWithNoTests",
+    "lint:staged": "lerna run lint:staged --concurrency 1 --stream"
+  },
+  "workspaces": {
+    "packages": [
+      "services/*"
+    ],
+    "nohoist": [
+      "**/serverless-*",
+      "**/hummus",
+      "**/puppeteer*"
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "yarn lint:staged",
+      "pre-push": "yarn test"
+    }
+  }
+}

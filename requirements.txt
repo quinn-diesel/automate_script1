@@ -1,0 +1,10 @@
+pynamodb==3.3.1
+boto3==1.9.1 #no-deploy
+elasticsearch==6.3.1
+aws-requests-auth==0.4.2
+elasticsearch-dsl>=6.0.0,<7.0.0
+python-dateutil==2.7.5
+aws-lambda-logging==0.1.1
+aws-xray-sdk==2.2.0
+git+https://github.com/ljxau/pycommon#egg=pycommon
+git+https://github.com/ljxau/pyrex@develop#egg=pyrex

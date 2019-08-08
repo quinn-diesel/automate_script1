@@ -1,0 +1,159 @@
+service: listings
+provider:
+  name: aws
+  runtime: python3.6
+  region: ap-southeast-2
+  stage: ${opt:stage,'dev'}
+  memorySize: 128
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:DescribeTable
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:GetRecords
+        - dynamodb:GetShardIterator
+        - dynamodb:DescribeStream
+        - dynamodb:ListStreams
+      Resource:
+        - arn:aws:dynamodb:#{AWS::Region}:*:table/${self:resources.Resources.DynamoTable.Properties.TableName}/*
+        - arn:aws:dynamodb:#{AWS::Region}:*:table/${self:resources.Resources.DynamoTable.Properties.TableName}
+    - Effect: Allow
+      Action:
+        - lambda:InvokeFunction
+        - lambda:InvokeAsync
+      Resource: '*'
+    - Effect: 'Allow'
+      Action:
+        - 'es:ESHttpPut'
+        - 'es:ESHttpPost'
+        - 'es:ESHttpHead'
+        - 'es:ESHttpGet'
+        - 'es:ESHttpDelete'
+      Resource: '*'
+    - Effect: Allow
+      Action:
+        - sns:publish
+      Resource: '*'
+  environment:
+    DEPLOYMENT_STAGE: ${self:provider.stage}
+    LISTINGS_TABLE_NAME: ${self:resources.Resources.DynamoTable.Properties.TableName}
+    CONTACTS_LAMBDA: contacts-${self:provider.stage}-index
+    LISTINGS_TASKS_LAMBDA: listing-tasks-${self:provider.stage}-index
+    ELASTIC_URL: ${self:custom.ess}
+    LISTINGS_INDEX_NAME: listings-${self:provider.stage}
+    PROFILE_LAMBDA: auth-profile-${self:provider.stage}-admin
+    LISTING_CREATED_TOPIC_ARN: arn:aws:sns:#{AWS::Region}:#{AWS::AccountId}:listing-created-${self:provider.stage}
+    ADMIN_ACCOUNTS: 'backoffice,admin'
+    AGENT_LISTING_SIZE: 500
+    VENDOR_LISTING_SIZE: 500
+    AGENTS_LAMBDA: agents-${self:provider.stage}-index
+    OFI_SERVICE_LAMBDA: ofi-${self:provider.stage}-index
+    LISTING_ID_MAPPING_LAMBDA: listing-id-mapping-${self:provider.stage}-index
+    REX_USER_NAME: v_shiva@ljx.com.au
+    REX_PASSWORD : shivaReddy@970
+    REX_POLLING_RATE_IN_MINS: 60
+    LISTING_FILES_INDEX_LAMDA: listing-files-${self:provider.stage}-2-index
+    LISTING_AGENCY_AGREEMENTS_INDEX_LAMDA: listing-agency-agreements-${self:provider.stage}-index
+    AGENCY_ID: avnu-lns
+    IDENTITY_USERNAME: Google_106600641818143500761
+    IDENTITY_EMAIL: jono@avnu.com.au
+    TEAM_NAME: nick.gittoes
+    THUMBNAIL_IMAGEURL: https://avnu.com.au/wp-content/uploads/2019/03/39241-hires_e1c1-581f-55fc-6b5c-38fe-fd70-9144-7ed3_20190307012100-400x300.jpg
+functions:
+  index:
+    handler: handler.main
+  admin:
+    handler: admin.main
+  migration:
+    handler: migration.handler
+  stream-handler:
+    handler: handler.listings_stream
+    events:
+      - stream:
+          type: dynamodb
+          arn:
+            Fn::GetAtt:
+              - DynamoTable
+              - StreamArn
+  stage-change-listener:
+    handler: handler.stage_change_listener
+    events:
+      - sns: arn:aws:sns:#{AWS::Region}:#{AWS::AccountId}:listing-stage-changed-${self:provider.stage}
+  stage-complete-listener:
+    handler: handler.stage_completed_listener
+    timeout: 30
+    events:
+      - sns: arn:aws:sns:#{AWS::Region}:#{AWS::AccountId}:listing-stage-completed-${self:provider.stage}
+  feed-rex-events-to-ofi:
+    handler: handler.feed_rex_events_to_ofi
+    timeout: 900
+    events:
+      - schedule:
+          enabled: true
+          name: rex-events-${self:provider.stage}
+          description: Fetch live events for all listings
+          rate: rate(${self:provider.environment.REX_POLLING_RATE_IN_MINS} minutes)
+
+custom:
+  logForwarding:
+    destinationARN: 'arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:logforwarder'
+  ess: ${file(./env/${self:provider.stage}.yml):es.url}
+  exportGitVariables: false
+  autoScalingEnabled: ${file(./env/${self:provider.stage}.yml):dynamo.table.AutoScalingEnabled}
+  capacities:
+    - table: DynamoTable
+      read:
+        minimum: ${file(./env/${self:provider.stage}.yml):dynamo.table.ReadCapacityUnits}
+        maximum: 100
+        usage: 0.75
+      write:
+        minimum: ${file(./env/${self:provider.stage}.yml):dynamo.table.WriteCapacityUnits}
+        maximum: 100
+        usage: 0.75
+resources:
+  Resources:
+    DynamoTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: createdBy
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        TableName: listings-${self:provider.stage}
+        StreamSpecification:
+          StreamViewType: NEW_AND_OLD_IMAGES
+        ProvisionedThroughput:
+          ReadCapacityUnits: ${file(./env/${self:provider.stage}.yml):dynamo.table.ReadCapacityUnits}
+          WriteCapacityUnits: ${file(./env/${self:provider.stage}.yml):dynamo.table.WriteCapacityUnits}
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: ${file(./env/${self:provider.stage}.yml):dynamo.table.PointInTimeRecoveryEnabled}
+        GlobalSecondaryIndexes:
+          - IndexName: listings-agent-index
+            KeySchema:
+              - AttributeName: createdBy
+                KeyType: HASH
+            ProvisionedThroughput:
+              ReadCapacityUnits: ${file(./env/${self:provider.stage}.yml):dynamo.index.ReadCapacityUnits}
+              WriteCapacityUnits: ${file(./env/${self:provider.stage}.yml):dynamo.index.WriteCapacityUnits}
+            Projection:
+              ProjectionType: ALL
+
+  Description: ${git:branch} - ${git:sha1}
+package:
+  exclude:
+    - venv/**
+plugins:
+  - serverless-plugin-git-variables
+  - serverless-python-requirements
+  # - '@ljxau/serverless-dynamodb-autoscaling'
+  - serverless-plugin-aws-resolvers
+  - serverless-log-forwarding
+  - serverless-pseudo-parameters
