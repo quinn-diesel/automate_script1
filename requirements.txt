@@ -7,6 +7,5 @@ python-dateutil==2.7.5
 aws-lambda-logging==0.1.1
 aws-xray-sdk==2.2.0
 openpyxl==2.6.2
-virtualenv==16.7.2
 git+https://github.com/ljxau/pycommon#egg=pycommon
 git+https://github.com/ljxau/pyrex@develop#egg=pyrex

@@ -1,107 +1,56 @@
-import json
-import requests
-import boto3
-import json
-import os
-import uuid
-from datetime import datetime
-import logging
-import string
-import random
-from models import Listing, PropertyDetails, Note, Feature, Address, Offer
-from pycommon.cases import snake_case_keys, camel_case_keys
-from pycommon.utils import random_letters_numbers, remove_empty_values
-from pycommon.service import call_service
-from pycommon.identity import get_team, is_admin_or_backoffice, get_email
 from openpyxl import load_workbook
-CONTACTS_LAMBDA = os.getenv("CONTACTS_LAMBDA")
-sns_client = boto3.client("sns")
-
-def create_listing(args, identity):
-
-    listing = Listing(
-        id=args.get("id") or str(uuid.uuid4()), reference=random_letters_numbers(8)
-    )
-
-    if args.get("address"):
-
-        # get your object
-        address_details = args.get("address")
-
-        # pythonize js obj
-        addr = snake_case_keys(remove_empty_values(address_details))
-
-        # grab keys from the model
-        keys = Address.get_attributes().keys()
-
-        # dictionary comprehension to create final obj
-        # aka this is making a constructor to match the keys from the model and
-        # disregarding anything that doesn't match so there aren't problems
-        # later
-        listing.address = Address(**{k: v for k, v in addr.items() if k in keys})
-
-        # make default property details
-        listing.property_details = PropertyDetails(bedrooms=0, bathrooms=0, carparks=0)
-
-    else:
-        raise ValueError("Invalid input, no addressDetails!")
-
-    if args.get("contact_id"):
-        contact = call_service(
-            CONTACTS_LAMBDA, identity, "getContact", {"id": args["contact_id"]}
-        )
-
-        listing.contacts = [remove_empty_values(contact)]
-
-    elif args.get("contacts"):
-        contacts = []
-        for contact in args["contacts"]:
-            result = call_service(
-                CONTACTS_LAMBDA,
-                identity,
-                "createContact",
-                {"input": camel_case_keys(contact)},
-            )
-            contacts.append(remove_empty_values(result))
-        listing.contacts = contacts
-    else:
-        raise ValueError("Invalid input, no contactId or contacts were provided")
-
-    if args.get("primary_agent"):
-        listing.agent_usernames = [args["primary_agent"]]
-        try:
-            logger.debug(
-                "Fetching agent team from auth profile for %s", args["primary_agent"]
-            )
-            agent = call_service(
-                PROFILE_LAMBDA, identity, "getUser", {"email": args["primary_agent"]}
-            )
-
-            listing.teams = [agent["team"]]
-        except:
-            raise ValueError("Provided agent does not have an auth profile!")
-    else:
-        listing.teams = [get_team(identity)]
-        listing.agent_usernames = [get_email(identity)]
-
-    # listing.save()
-    print(listing.to_json())
+import json
+import service
 
 def create_listing():
-    pass
+    service.create_listing(args, identity)
 
 def update_bed_bath_car():
     pass 
 
+def prepare_payload(address,contacts,primary_agent):
+    print('address',address)
+    payload={
+      "arguments": {
+        "input": {
+            "address": address,
+            "contacts": [
+                contacts
+            ],
+            "primaryAgent": primary_agent
+        }
+    },"identity":{
+        "username": "Google_106600641818143500761",
+        "claims": {
+            "email": "ajeya@ljx.com.au",
+            "custom:office": "corp",
+            "custom:manager": "",
+            "custom:team": "engineering",
+            "cognito:groups": [
+                "agents-group"
+            ]
+        }
+    }
+    }
+    return payload["arguments"]["input"],payload["identity"]
 def main(event, context):
-    wb = load_workbook(filename='Rex Import (2).xlsx')
-    ws = wb['Future script']
+    # service.get_listing('be96a009-2e1f-4aff-b7ba-8d6c8a24103a')
+    wb = load_workbook(filename='RexImport.xlsx')
+    ws = wb['Sheet3']
 
-    for row in ws.iter_rows(min_row=5,min_col=3,max_row=ws.max_row,max_col=ws.max_column):
+    for row in ws.iter_rows(min_row=2,min_col=1,max_row=ws.max_row,max_col=3):
+        lst=[]
         for cell in row:
-            print(cell.value)
+            print('cell',cell.row)
+            lst.append(cell.value)
+        print('lst',lst)
+        if (lst[0]!=None and lst[1]!=None and lst[2]!=None ):
+            args,identity=prepare_payload(json.loads(lst[0]),json.loads(lst[1]),json.loads(lst[2])["primaryAgent"])
+            service.create_listing(args, identity)
+
         print('-------')
 
+    # create_listing()
 
     # listing_id='7e12dbc2-7c6d-4386-8c10-9ea0f5d16426'
     # listing = Listing.get(listing_id)
