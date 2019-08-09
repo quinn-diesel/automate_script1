@@ -56,19 +56,26 @@ def main(event, context):
             property_details["bedrooms"] = int(lst[3])
             property_details["bathrooms"] = int(lst[4])
             property_details["carparks"] = int(lst[5])
-            try:
-                pd, listing = service.update_property_details(
-                    listing["id"],
-                    {
-                        "appraisals": property_details["appraisals"],
-                        "bathrooms": property_details["bathrooms"],
-                        "bedrooms": property_details["bedrooms"],
-                        "carparks": property_details["carparks"],
-                    },
-                    identity,
-                )
-            except:
-                pass
+            # try:
+            pd = service.update_property_details(
+                listing["id"],
+                {
+                    "appraisals": [{"value": 123}],
+                    "bathrooms": property_details.get("bathrooms", 0),
+                    "bedrooms": property_details.get("bedrooms", 0),
+                    "carparks": property_details.get("carparks", 0),
+                    "property_type": property_details.get("propertyType", None),
+                    "land_size": property_details.get("landSize", 0),
+                    "internal_sqm": property_details.get("internalSqm", 0),
+                    "external_sqm": property_details.get("externalSqm", 0),
+                    "zoning": property_details.get("zoning", None),
+                },
+                identity
+            )
+            print('pd5',pd)
+            print(1/0)
+            # except:
+            #     pass
 
             # moving stage from 'opportunity to 'precampaign'
             updated_staged_code = service.update_stage(
@@ -89,8 +96,8 @@ def main(event, context):
                 rex_listing_id,
                 identity,
                 listing["agent_usernames"],
-                property_details["bedrooms"],
-                property_details["bathrooms"],
-                property_details["carparks"],
+                pd["bedrooms"],
+                pd["bathrooms"],
+                pd["carparks"],
             )
         print("--------------------------------------------------------\n\n")

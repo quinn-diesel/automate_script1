@@ -109,11 +109,13 @@ def create_listing(args, identity):
 
 @views.property_details
 def update_property_details(listing_id, property_details, identity):
+    print("property_details", property_details)
     pd = PropertyDetails(**property_details)
     listing = Listing.get(listing_id)
+
     listing.property_details = pd
     listing.save()
-    return pd, listing.to_json()
+    return pd
 
 
 def update_stage(listing_id, old_previous_stage):
@@ -220,9 +222,9 @@ def update_property_details_in_rex(rex_listing_id, identity, agents, bed, bath, 
     elif len(agents) == 1:
         first_agent_id = u_api.get_agent_id_by_email(agents[0])
         if first_agent_id == None:
-            first_agent_id = create_agent_in_rex(
-                agents[0], identity, u_api
-            )
-    l_api.set_listing_details(rex_listing_id,first_agent_id,second_agent_id)
-    l_api.set_property_attributes(rex_listing_id,bed,bath,car)
-    print(1/0)
+            first_agent_id = create_agent_in_rex(agents[0], identity, u_api)
+    l_api.set_listing_details(rex_listing_id, first_agent_id, second_agent_id)
+    print("added agent to rex")
+    l_api.set_property_attributes(rex_listing_id, bed, bath, car)
+    print("added bed-{0},bath-{1},car-{2} in rex".format(bed, bath, car))
+

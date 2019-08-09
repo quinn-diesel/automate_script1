@@ -2,6 +2,7 @@ from functools import wraps
 
 
 def _to_property_details_view(pd):
+    print('pd',pd)
     return {
         "appraisals": pd.appraisals,
         "bedrooms": pd.bedrooms,
@@ -13,6 +14,7 @@ def _to_property_details_view(pd):
         "propertyType": pd.property_type,
         "zoning": pd.zoning,
     }
+
 
 
 def _to_agents_view(agents):
@@ -97,6 +99,7 @@ def property_details(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
         pd = f(*args, **kwargs)
+        print('pd1',pd)
         return _to_property_details_view(pd)
 
     return wrapper

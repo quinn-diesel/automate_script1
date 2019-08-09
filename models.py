@@ -55,6 +55,7 @@ class Feature(MapAttribute):
 
 
 class PropertyDetails(MapAttribute):
+    print('MapAttribute',MapAttribute)
     appraisals = ListAttribute(default=[])
     bedrooms = NumberAttribute()
     bathrooms = NumberAttribute()
