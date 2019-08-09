@@ -2,3 +2,4 @@ node_modules/
 __pycache__/
 venv
 WeeklyAlertMailforUser.py
+node_modules/
