@@ -1,10 +1,7 @@
 from openpyxl import load_workbook
 import json
+import os
 import service
-
-
-def update_bed_bath_car():
-    pass
 
 
 def prepare_payload(address, contacts, primary_agent):
@@ -41,8 +38,6 @@ def main(event, context):
     for row in ws.iter_rows(min_row=2, min_col=1, max_row=ws.max_row, max_col=6):
         lst = []
         for cell in row:
-            # print('cell',cell.row)
-            print("val", cell.value)
             lst.append(cell.value)
         if lst[0] != None and lst[1] != None and lst[2] != None:
             args, identity = prepare_payload(
@@ -50,49 +45,55 @@ def main(event, context):
                 json.loads(lst[1]),
                 json.loads(lst[2])["primaryAgent"],
             )
-            print("lst", lst)
-            # creating a listing
+
+            # creating a listing in agent_portal
             listing = service.create_listing(args, identity)
-            print("listing", listing)
+            print(
+                "listing created in agent app with id - '{0}' with address- '{1}'".format(
+                    listing["id"], listing["address"]["full_address"]
+                )
+            )
+
+            # updating bed,bath,car in agent_portal
             property_details = listing["property_details"]
-            print("property_details", property_details)
             property_details["bedrooms"] = int(lst[3])
             property_details["bathrooms"] = int(lst[4])
             property_details["carparks"] = int(lst[5])
-            pd, listing = service.update_property_details(
-                listing["id"],
-                {
-                    "appraisals": [{"value": 123}],
-                    "bathrooms": 1,
-                    "bedrooms": 2,
-                    "carparks": 1,
-                    "propertyType": "house",
-                    "landSize": 100,
-                    "internalSqm": 200,
-                    "externalSqm": 300,
-                    "zoning": "residential",
-                },
-                identity,
+            try:
+                pd, listing = service.update_property_details(
+                    listing["id"],
+                    {
+                        "appraisals": property_details["appraisals"],
+                        "bathrooms": property_details["bathrooms"],
+                        "bedrooms": property_details["bedrooms"],
+                        "carparks": property_details["carparks"],
+                    },
+                    identity,
+                )
+            except:
+                pass
+
+            # moving stage from 'opportunity to 'precampaign'
+            updated_staged_code = service.update_stage(
+                listing["id"], listing["stage_code"].upper()
             )
-            print("property_details", property_details)
-            print("pd,listing", pd, listing)
+            print(
+                "listing id moved from '{0}' to '{1}'".format(
+                    listing["stage_code"], updated_staged_code
+                )
+            )
 
-            # service.update_property_details(listing.id,)
-            # print(listing)
+            # creating listing in rex
+            rex_listing_id = service.create_listing_in_rex(listing["id"])
+            print("listing created in rex with id - ", rex_listing_id)
 
-        print("-------")
-
-    # create_listing()
-
-    # listing_id='7e12dbc2-7c6d-4386-8c10-9ea0f5d16426'
-    # listing = Listing.get(listing_id)
-    # print(listing.to_json())
-    # Use this code if you don't use the http event with the LAMBDA-PROXY
-    # integration
-
-    """
-    return {
-        "message": "Go Serverless v1.0! Your function executed successfully!",
-        "event": event
-    }
-    """
+            # moving agents,bed,bath,car to rex_listing_id
+            service.update_property_details_in_rex(
+                rex_listing_id,
+                identity,
+                listing['agent_usernames'],
+                property_details["bedrooms"],
+                property_details["bathrooms"],
+                property_details["carparks"],
+            )
+        print("--------------------------------------------------------")

@@ -15,10 +15,20 @@ from pycommon.service import call_service
 from pycommon.identity import get_team, is_admin_or_backoffice, get_email
 from openpyxl import load_workbook
 import views
+from pyrex.api import listings, properties, users
+from pyrex.client import RexClient
+import traceback
+
+CLIENT = RexClient(os.getenv("REX_USER_NAME"), os.getenv("REX_PASSWORD"))
+l_api = listings.ListingsApi(CLIENT)
+p_api = properties.PropertiesApi(CLIENT)
+u_api = users.UsersApi(CLIENT)
 CONTACTS_LAMBDA = os.getenv("CONTACTS_LAMBDA")
 PROFILE_LAMBDA = os.getenv("PROFILE_LAMBDA")
+AGENTS_LAMBDA = os.getenv("AGENTS_LAMBDA")
 sns_client = boto3.client("sns")
 logger = logging.getLogger()
+
 
 def create_listing(args, identity):
 
@@ -70,6 +80,7 @@ def create_listing(args, identity):
     else:
         raise ValueError("Invalid input, no contactId or contacts were provided")
     if args.get("primary_agent"):
+        print("args", args)
         listing.agent_usernames = [args["primary_agent"]]
 
         try:
@@ -79,7 +90,7 @@ def create_listing(args, identity):
             agent = call_service(
                 PROFILE_LAMBDA, identity, "getUser", {"email": args["primary_agent"]}
             )
-            print('agent',agent)
+            print("agent", agent)
 
             listing.teams = [agent["team"]]
         except:
@@ -87,9 +98,6 @@ def create_listing(args, identity):
     else:
         listing.teams = [get_team(identity)]
         listing.agent_usernames = [get_email(identity)]
-    print("json", listing.to_json())
-    print("listing_id", listing.id)
-    print("fullAddress", listing.address.full_address)
     listing.save()
     # sns_client.publish(
     #     TopicArn=os.environ["LISTING_CREATED_TOPIC_ARN"],
@@ -100,15 +108,15 @@ def create_listing(args, identity):
     # get_listing(listing.id)
     return listing.to_json()
 
+
 @views.property_details
 def update_property_details(listing_id, property_details, identity):
-    print('listing_id',listing_id)
-    print('property_details',property_details)
     pd = PropertyDetails(**property_details)
     listing = Listing.get(listing_id)
     listing.property_details = pd
     listing.save()
-    return pd,listing.to_json()
+    return pd, listing.to_json()
+
 
 def update_stage(listing_id, old_previous_stage):
     """
@@ -128,10 +136,95 @@ def update_stage(listing_id, old_previous_stage):
         listing.stage_code = next_stage[old_previous_stage.upper()]
         listing.save()
 
-
     return listing.stage_code
 
 
-def get_listing(listing_id):
+def get_property_id(listing_id):
+    """
+    by taking agent listing id,returing rex property id
+    form listing  address we are building rex compatable  address, with that address we are searching for rex property, if property found, returning that property id
+    else  creating property and  returing new property id
+    """
     listing = Listing.get(listing_id)
-    print(listing.to_json())
+    rex_property_id = None
+    try:
+        full_address = listing.address.unit_number
+        if full_address is None:
+            full_address = ""
+
+        if listing.address.address_low is not None:
+            if listing.address.unit_number is not None:
+                full_address += " /" + str(listing.address.address_low)
+            else:
+                full_address += str(listing.address.address_low)
+
+        full_address += (
+            listing.address.street_name
+            + " "
+            + listing.address.suburb
+            + " "
+            + listing.address.state
+            + " "
+            + listing.address.postcode
+        )
+        rex_property_id = p_api.get_property_id(full_address)
+    except:
+        traceback.print_exc()
+    if rex_property_id is None:
+        property = properties.Property(
+            unit_number=listing.address.unit_number,
+            street_number=listing.address.address_low,
+            street_name=listing.address.street_name,
+            suburb=listing.address.suburb,
+            state=listing.address.state,
+            postcode=listing.address.postcode,
+        )
+        rex_property_id = p_api.create(property)["_id"]
+    return rex_property_id
+
+
+def create_listing_in_rex(listing_id):
+    """
+    create listing in rex crm, returns newly created rex listing id
+    :type listing_id:str
+    """
+    rex_property_id = get_property_id(listing_id)
+    location_id = u_api.get_location_id()
+    return l_api.create(rex_property_id, "residential_sale", location_id)
+
+
+def create_agent_in_rex(email, ident, users_api):
+    """
+    if agent not found it will create, in dev env  this may not  work, because of rex users limit
+    """
+    agent_id = None
+    agent = call_service(AGENTS_LAMBDA, ident, "getAgent", {"email": email})
+    rex_agent = users_api.create_account_user(
+        agent["email"], agent["firstName"], agent["lastName"], send_invite=False
+    )
+    if rex_agent["error"] == None:
+        agent_id = rex_agent["id"]
+        return agent_id
+    return agent_id
+
+
+def update_property_details_in_rex(rex_listing_id, identity, agents, bed, bath, car):
+    first_agent_id = None
+    second_agent_id = None
+    if len(agents) >= 2:
+        first_agent_id = u_api.get_agent_id_by_email(agents[0])
+        second_agent_id = u_api.get_agent_id_by_email(agents[1])
+        if first_agent_id == None:
+            first_agent_id = create_agent_in_rex(agents[0], identity, u_api)
+        if second_agent_id == None:
+            second_agent_id = create_agent_in_rex(agents[1], identity, u_api)
+
+    elif len(agents) == 1:
+        first_agent_id = u_api.get_agent_id_by_email(agents[0])
+        if first_agent_id == None:
+            first_agent_id = create_agent_in_rex(
+                agents[0], identity, u_api
+            )
+    l_api.set_listing_details(rex_listing_id,first_agent_id,second_agent_id)
+    l_api.set_property_attributes(rex_listing_id,bed,bath,car)
+    print(1/0)
