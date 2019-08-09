@@ -64,10 +64,6 @@ class PropertyDetails(MapAttribute):
     land_size = NumberAttribute(null=True, attr_name="landSize")
     property_type = UnicodeAttribute(null=True, attr_name="propertyType")
     zoning = UnicodeAttribute(null=True)
-    print('external_sqm',external_sqm)
-    print('internal_sqm',external_sqm)
-    print('land_size',external_sqm)
-    print('property_type',property_type)
 
 
 

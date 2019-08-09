@@ -80,7 +80,6 @@ def create_listing(args, identity):
     else:
         raise ValueError("Invalid input, no contactId or contacts were provided")
     if args.get("primary_agent"):
-        print("args", args)
         listing.agent_usernames = [args["primary_agent"]]
 
         try:
@@ -90,7 +89,6 @@ def create_listing(args, identity):
             agent = call_service(
                 PROFILE_LAMBDA, identity, "getUser", {"email": args["primary_agent"]}
             )
-            print("agent", agent)
 
             listing.teams = [agent["team"]]
         except:
