@@ -26,7 +26,6 @@ u_api = users.UsersApi(CLIENT)
 CONTACTS_LAMBDA = os.getenv("CONTACTS_LAMBDA")
 PROFILE_LAMBDA = os.getenv("PROFILE_LAMBDA")
 AGENTS_LAMBDA = os.getenv("AGENTS_LAMBDA")
-LISTING_CREATED_TOPIC_ARN=os.getenv("LISTING_CREATED_TOPIC_ARN")
 
 sns_client = boto3.client("sns")
 logger = logging.getLogger()
@@ -99,10 +98,8 @@ def create_listing(args, identity):
         listing.teams = [get_team(identity)]
         listing.agent_usernames = [get_email(identity)]
     listing.save()
-    print('LISTING_CREATED_TOPIC_ARN',LISTING_CREATED_TOPIC_ARN)
-    # prin
     sns_client.publish(
-        TopicArn="arn:aws:sns:ap-southeast-2:529618128667:listing-created-dev",
+        TopicArn='arn:aws:sns:ap-southeast-2:529618128667:listing-created-dev',
         Message=json.dumps(
             {"listingId": listing.id, "fullAddress": listing.address.full_address}
         ),

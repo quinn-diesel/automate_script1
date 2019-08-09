@@ -4,7 +4,7 @@ import os
 import service
 
 EXCEL_PATH = os.getenv("EXCEL_PATH")
-
+SIZE= os.getenv("SIZE")
 
 def prepare_payload(address, contacts, primary_agent):
     payload = {
@@ -34,10 +34,13 @@ def main(event, context):
     wb = load_workbook(filename=EXCEL_PATH)
     ws = wb["Sheet3"]
 
-    for row in ws.iter_rows(min_row=2, min_col=1, max_row=ws.max_row, max_col=8):
+    #want to get every row use 'ws.max_row' instead of 'Limit'
+    min_row=2
+    max_row=int(SIZE)+int(min_row)-1
+    for row in ws.iter_rows(min_row=min_row, min_col=1, max_row=max_row, max_col=8):#want to get every row use 'ws.max_row'
         lst = []
         for cell in row:
-            print(cell.value)
+
             lst.append(cell.value)
 
         # lst[0]=address value
