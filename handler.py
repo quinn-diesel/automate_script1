@@ -28,8 +28,6 @@ def prepare_payload(address, contacts, primary_agent):
 
 
 def main(event, context):
-    # service.get_listing('be96a009-2e1f-4aff-b7ba-8d6c8a24103a')
-    # service.get_listing('0568088b-abba-4cde-aece-c31da7c8ca18')
 
     wb = load_workbook(filename="RexImport.xlsx")
     ws = wb["Sheet3"]
@@ -77,8 +75,8 @@ def main(event, context):
                 listing["id"], listing["stage_code"].upper()
             )
             print(
-                "listing id moved from '{0}' to '{1}'".format(
-                    listing["stage_code"], updated_staged_code
+                "listing id -'{0}' moved from '{1}' to '{2}'".format(
+                    listing["id"], listing["stage_code"], updated_staged_code
                 )
             )
 
@@ -90,9 +88,9 @@ def main(event, context):
             service.update_property_details_in_rex(
                 rex_listing_id,
                 identity,
-                listing['agent_usernames'],
+                listing["agent_usernames"],
                 property_details["bedrooms"],
                 property_details["bathrooms"],
                 property_details["carparks"],
             )
-        print("--------------------------------------------------------")
+        print("--------------------------------------------------------\n\n")
