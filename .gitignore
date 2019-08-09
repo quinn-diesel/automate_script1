@@ -6,3 +6,4 @@ node_modules/
 .~lock.RexImport.xlsx#
 sample.xlsx
 .vscode/
+fixtures/
