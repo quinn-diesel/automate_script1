@@ -5,7 +5,6 @@ import service
 
 
 def prepare_payload(address, contacts, primary_agent):
-    print("address", address)
     payload = {
         "arguments": {
             "input": {
