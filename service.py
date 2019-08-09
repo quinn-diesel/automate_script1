@@ -26,6 +26,8 @@ u_api = users.UsersApi(CLIENT)
 CONTACTS_LAMBDA = os.getenv("CONTACTS_LAMBDA")
 PROFILE_LAMBDA = os.getenv("PROFILE_LAMBDA")
 AGENTS_LAMBDA = os.getenv("AGENTS_LAMBDA")
+LISTING_CREATED_TOPIC_ARN=os.getenv("LISTING_CREATED_TOPIC_ARN")
+
 sns_client = boto3.client("sns")
 logger = logging.getLogger()
 
@@ -97,13 +99,14 @@ def create_listing(args, identity):
         listing.teams = [get_team(identity)]
         listing.agent_usernames = [get_email(identity)]
     listing.save()
-    # sns_client.publish(
-    #     TopicArn=os.environ["LISTING_CREATED_TOPIC_ARN"],
-    #     Message=json.dumps(
-    #         {"listingId": listing.id, "fullAddress": listing.address.full_address}
-    #     ),
-    # )
-    # get_listing(listing.id)
+    print('LISTING_CREATED_TOPIC_ARN',LISTING_CREATED_TOPIC_ARN)
+    # prin
+    sns_client.publish(
+        TopicArn="arn:aws:sns:ap-southeast-2:529618128667:listing-created-dev",
+        Message=json.dumps(
+            {"listingId": listing.id, "fullAddress": listing.address.full_address}
+        ),
+    )
     return listing.to_json()
 
 
@@ -228,3 +231,5 @@ def update_property_details_in_rex(rex_listing_id, identity, agents, bed, bath, 
     l_api.set_property_attributes(rex_listing_id, bed, bath, car)
     print("added bed-'{0}',bath-'{1}',car-'{2}' in rex".format(bed, bath, car))
 
+def set_headline_and_body_to_rex(rex_listing_id,headline,body):
+    return l_api.set_headline_and_body(rex_listing_id,headline,body)

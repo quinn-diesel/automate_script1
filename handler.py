@@ -2,8 +2,9 @@ from openpyxl import load_workbook
 import json
 import os
 import service
- 
-EXCEL_PATH=os.getenv('EXCEL_PATH')
+
+EXCEL_PATH = os.getenv("EXCEL_PATH")
+
 
 def prepare_payload(address, contacts, primary_agent):
     payload = {
@@ -33,11 +34,23 @@ def main(event, context):
     wb = load_workbook(filename=EXCEL_PATH)
     ws = wb["Sheet3"]
 
-    for row in ws.iter_rows(min_row=2, min_col=1, max_row=ws.max_row, max_col=6):
+    for row in ws.iter_rows(min_row=2, min_col=1, max_row=ws.max_row, max_col=8):
         lst = []
         for cell in row:
+            print(cell.value)
             lst.append(cell.value)
+
+        # lst[0]=address value
+        # lst[1]=contact value
+        # lst[2]=agent value
+        # lst[3]=bed value
+        # lst[4]=bath value
+        # lst[5]=car value
+        # lst[6]=headline value
+        # lst[7]=body value
+
         if lst[0] != None and lst[1] != None and lst[2] != None:
+
             args, identity = prepare_payload(
                 json.loads(lst[0]),
                 json.loads(lst[1]),
@@ -51,7 +64,6 @@ def main(event, context):
                     listing["id"], listing["address"]["full_address"]
                 )
             )
-
             # updating bed,bath,car in agent_portal
             property_details = listing["property_details"]
             property_details["bedrooms"] = int(lst[3])
@@ -70,7 +82,7 @@ def main(event, context):
                     "external_sqm": property_details.get("externalSqm", 0),
                     "zoning": property_details.get("zoning", None),
                 },
-                identity
+                identity,
             )
 
             # moving stage from 'opportunity to 'precampaign'
@@ -96,4 +108,9 @@ def main(event, context):
                 pd["bathrooms"],
                 pd["carparks"],
             )
+
+            # updating headline and body only if one of the value is given
+            if lst[6] != None or lst[7] != None:
+                service.set_headline_and_body_to_rex(rex_listing_id, lst[6], lst[7])
+
         print("--------------------------------------------------------\n\n")
