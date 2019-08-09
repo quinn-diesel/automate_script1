@@ -3,6 +3,7 @@ import json
 import os
 import service
 
+EXCEL_PATH=os.getenv('EXCEL_PATH')
 
 def prepare_payload(address, contacts, primary_agent):
     payload = {
@@ -29,7 +30,7 @@ def prepare_payload(address, contacts, primary_agent):
 
 def main(event, context):
 
-    wb = load_workbook(filename="RexImport.xlsx")
+    wb = load_workbook(filename=EXCEL_PATH)
     ws = wb["Sheet3"]
 
     for row in ws.iter_rows(min_row=2, min_col=1, max_row=ws.max_row, max_col=6):

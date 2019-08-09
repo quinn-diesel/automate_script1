@@ -224,7 +224,7 @@ def update_property_details_in_rex(rex_listing_id, identity, agents, bed, bath, 
         if first_agent_id == None:
             first_agent_id = create_agent_in_rex(agents[0], identity, u_api)
     l_api.set_listing_details(rex_listing_id, first_agent_id, second_agent_id)
-    print("added agent to rex")
+    print("added agent1-'{0}' and agent2-'{1}' to rex".format(u_api.get_agent_name(first_agent_id), u_api.get_agent_name(second_agent_id)))
     l_api.set_property_attributes(rex_listing_id, bed, bath, car)
-    print("added bed-{0},bath-{1},car-{2} in rex".format(bed, bath, car))
+    print("added bed-'{0}',bath-'{1}',car-'{2}' in rex".format(bed, bath, car))
 
