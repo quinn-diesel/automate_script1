@@ -56,11 +56,10 @@ def main(event, context):
             property_details["bedrooms"] = int(lst[3])
             property_details["bathrooms"] = int(lst[4])
             property_details["carparks"] = int(lst[5])
-            # try:
             pd = service.update_property_details(
                 listing["id"],
                 {
-                    "appraisals": [{"value": 123}],
+                    "appraisals": property_details.get("appraisals", []),
                     "bathrooms": property_details.get("bathrooms", 0),
                     "bedrooms": property_details.get("bedrooms", 0),
                     "carparks": property_details.get("carparks", 0),
@@ -72,10 +71,6 @@ def main(event, context):
                 },
                 identity
             )
-            print('pd5',pd)
-            print(1/0)
-            # except:
-            #     pass
 
             # moving stage from 'opportunity to 'precampaign'
             updated_staged_code = service.update_stage(
