@@ -116,4 +116,4 @@ def main(event, context):
             if lst[6] != None or lst[7] != None:
                 service.set_headline_and_body_to_rex(rex_listing_id, lst[6], lst[7])
 
-        print("--------------------------------------------------------\n\n")
+        print("\n--------------------------------------------------------\n")

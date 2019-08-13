@@ -110,7 +110,6 @@ def create_listing(args, identity):
 
 @views.property_details
 def update_property_details(listing_id, property_details, identity):
-    print("property_details", property_details)
     pd = PropertyDetails(**property_details)
     listing = Listing.get(listing_id)
 
@@ -120,7 +119,7 @@ def update_property_details(listing_id, property_details, identity):
 
 
 def update_stage(listing_id, identity):
-    #getting all the stages,taskgroups,stages
+    #getting all the stages,taskgroups,tasks
     call_service(
         LISTINGS_TASKS_LAMBDA, identity, "getCurrentStageTasks", {"listingId": listing_id}
     )
