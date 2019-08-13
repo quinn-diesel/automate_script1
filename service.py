@@ -18,7 +18,9 @@ import views
 from pyrex.api import listings, properties, users
 from pyrex.client import RexClient
 import traceback
-
+from pycommon.es import get_es_client
+import time
+es = get_es_client()
 CLIENT = RexClient(os.getenv("REX_USER_NAME"), os.getenv("REX_PASSWORD"))
 l_api = listings.ListingsApi(CLIENT)
 p_api = properties.PropertiesApi(CLIENT)
@@ -26,13 +28,16 @@ u_api = users.UsersApi(CLIENT)
 CONTACTS_LAMBDA = os.getenv("CONTACTS_LAMBDA")
 PROFILE_LAMBDA = os.getenv("PROFILE_LAMBDA")
 AGENTS_LAMBDA = os.getenv("AGENTS_LAMBDA")
-
+LISTINGS_INDEX_NAME=os.getenv("LISTINGS_INDEX_NAME")
+LISTINGS_STAGES_TABLE=os.getenv("LISTINGS_STAGES_TABLE")
+LISTINGS_TABLE_NAME=os.getenv("LISTINGS_TABLE_NAME")
+LISTINGS_TASKS_LAMBDA=os.getenv('LISTINGS_TASKS_LAMBDA')
 sns_client = boto3.client("sns")
+dynodb_client=boto3.resource('dynamodb')
 logger = logging.getLogger()
-
+LISTING_CREATED_TOPIC_ARN=os.getenv('LISTING_CREATED_TOPIC_ARN')
 
 def create_listing(args, identity):
-
     listing = Listing(
         id=args.get("id") or str(uuid.uuid4()), reference=random_letters_numbers(8)
     )
@@ -117,28 +122,150 @@ def update_property_details(listing_id, property_details, identity):
     listing.save()
     return pd
 
+@views.listing
+def get_listing(listing_id, identity):
+    return es.get(id=listing_id, doc_type="_doc", index=LISTINGS_INDEX_NAME).get(
+        "_source"
+    )
+def getTasks(listing_id,identity):
+    return call_service(
+        LISTINGS_TASKS_LAMBDA, identity, "getCurrentStageTasks", {"listingId": listing_id}
+    )
+def update_stage(listing_id, old_previous_stage, identity):
+    # """
+    # updates stage in listing table in dynamodb
+    # :type listing_id:str
+    # :param listing_id: listing id
+    # :type old_previous_stage : str
+    # :param old_previous_stage : from which stage this stage request came from
+    # """
+    # next_stage = {
+    #     "OPPORTUNITY": "PRECAMPAIGN",
+    #     "PRECAMPAIGN": "INCAMPAIGN",
+    #     "INCAMPAIGN": "EXCHANGE",
+    #     "EXCHANGE": "SETTLEMENT",
+    # }
+    listing=get_listing(listing_id,identity)
+    # if old_previous_stage != "SETTLEMENT":
+    #     listing.stage_code = next_stage[old_previous_stage.upper()]
+    #     listing.save()
+    
+    # """
+    # updates stage in listing-tasks table in dynamodb 
+    # """
+    listing_tasks_table = dynodb_client.Table(LISTINGS_STAGES_TABLE)
+    # listings_table = dynodb_client.Table(LISTINGS_TABLE_NAME)
+    print('listinges',listing)
+    array=[
+        {
+            'listingId': listing['id'],
+            'code': 'OPPORTUNITY',
+            'completedDate':True,
+            'createdDate':int(listing['createdAt']),
+            'iscompleted':False,
+            'name':'Opportunity',
+            'sortOrder':1
+         },
+         {
+            'listingId': listing['id'],
+            'code': 'PRECAMPAIGN',
+            'completedDate':True,
+            'createdDate':int(listing['createdAt']),
+            'iscompleted':False,
+            'name':'Pre Campaign',
+            'sortOrder':2
+         },
+         {
+            'listingId': listing['id'],
+            'code': 'INCAMPAIGN',
+            'completedDate':True,
+            'createdDate':int(listing['createdAt']),
+            'iscompleted':False,
+            'name':'In Campaign',
+            'sortOrder':3
+         },
+         {
+            'listingId': listing['id'],
+            'code': 'EXCHANGE',
+            'completedDate':True,
+            'createdDate':int(listing['createdAt']),
+            'iscompleted':False,
+            'name':'Exchange',
+            'sortOrder':4
+         },
+         {
+            'listingId': listing['id'],
+            'code': 'SETTLEMENT',
+            'completedDate':True,
+            'createdDate':int(listing['createdAt']),
+            'iscompleted':False,
+            'name':'Settlement',
+            'sortOrder':5
+         },
 
-def update_stage(listing_id, old_previous_stage):
-    """
-    :type listing_id:str
-    :param listing_id: listing id
-    :type old_previous_stage : str
-    :param old_previous_stage : from which stage this stage request came from
-    """
-    next_stage = {
-        "OPPORTUNITY": "PRECAMPAIGN",
-        "PRECAMPAIGN": "INCAMPAIGN",
-        "INCAMPAIGN": "EXCHANGE",
-        "EXCHANGE": "SETTLEMENT",
-    }
-    listing = Listing.get(listing_id)
-    if old_previous_stage != "SETTLEMENT":
-        listing.stage_code = next_stage[old_previous_stage.upper()]
-        listing.save()
+    ]       
+    for arr in array:
+        listing_tasks_table.put_item(Item=arr)
 
-    return listing.stage_code
+    return call_service(
+        LISTINGS_TASKS_LAMBDA, identity, "completeStage", {"listingId": listing['id']}
+    )    
+    # listing_tasks_table.update_item(
+    #     Key={
+    #         'listingId': listing['id'],
+    #         'code': old_previous_stage
+    #     },
+    #     UpdateExpression='SET iscompleted = :val1, completedDate = :val2',
+    #     ExpressionAttributeValues={
+    #         ':val1': True,
+    #         ':val2': datetime.timestamp(),
 
+    #     }
+    # )
 
+    # response=listing_tasks_table.get_item(
+    #     Key={
+    #         'listingId':  listing['id'],
+    #         'code': old_previous_stage
+    #     }
+    # )
+    # item = response['Item']
+    # return item
+    # Listing.get
+    #     Item={
+    #         'listingId': '34',
+    #         'code': 'EXCHANGE',
+
+    #      }
+    #  )
+    # table.put_item(Item= {'listingId': '34','code': 'microsoft','completedDate':True,'createdDate':listing['createdAt'],'iscompleted':False,'name':'EXCHANGE','sortOrder':4})
+    # return listing.stage_code
+def wait(listing_id,retries):
+    foundFlag=False
+    foundResponse=None
+    print('adad')
+    retries=retries-1
+    print(retries)
+    listing_tasks_table = dynodb_client.Table(LISTINGS_STAGES_TABLE)
+    response=listing_tasks_table.get_item(Key={
+                'listingId':  listing_id,
+                'code':'OPPORTUNITY'
+            })
+    print(response)
+    if  'Item' not in response and retries>0:
+        print('yes')
+        time.sleep(4)
+        wait(listing_id,retries)
+    else:
+        if 'Item' in response:
+            foundFlag=True
+            foundResponse=response
+    return foundFlag,foundResponse
+        # return foundFlag,foundResponse
+def updatestage(listing_id,identity):
+    return call_service(
+        LISTINGS_TASKS_LAMBDA, identity, "completeStage", {"listingId": listing_id}
+    )    
 def get_property_id(listing_id):
     """
     by taking agent listing id,returing rex property id
