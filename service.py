@@ -26,6 +26,7 @@ u_api = users.UsersApi(CLIENT)
 CONTACTS_LAMBDA = os.getenv("CONTACTS_LAMBDA")
 PROFILE_LAMBDA = os.getenv("PROFILE_LAMBDA")
 AGENTS_LAMBDA = os.getenv("AGENTS_LAMBDA")
+LISTINGS_TASKS_LAMBDA=os.getenv('LISTINGS_TASKS_LAMBDA')
 
 sns_client = boto3.client("sns")
 logger = logging.getLogger()
@@ -118,25 +119,16 @@ def update_property_details(listing_id, property_details, identity):
     return pd
 
 
-def update_stage(listing_id, old_previous_stage):
-    """
-    :type listing_id:str
-    :param listing_id: listing id
-    :type old_previous_stage : str
-    :param old_previous_stage : from which stage this stage request came from
-    """
-    next_stage = {
-        "OPPORTUNITY": "PRECAMPAIGN",
-        "PRECAMPAIGN": "INCAMPAIGN",
-        "INCAMPAIGN": "EXCHANGE",
-        "EXCHANGE": "SETTLEMENT",
-    }
-    listing = Listing.get(listing_id)
-    if old_previous_stage != "SETTLEMENT":
-        listing.stage_code = next_stage[old_previous_stage.upper()]
-        listing.save()
+def update_stage(listing_id, identity):
+    #getting all the stages,taskgroups,stages
+    call_service(
+        LISTINGS_TASKS_LAMBDA, identity, "getCurrentStageTasks", {"listingId": listing_id}
+    )
 
-    return listing.stage_code
+    #updating stage
+    return call_service(
+        LISTINGS_TASKS_LAMBDA, identity, "completeStage", {"listingId": listing_id}
+    )['code']
 
 
 def get_property_id(listing_id):

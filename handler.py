@@ -90,7 +90,7 @@ def main(event, context):
 
             # moving stage from 'opportunity to 'precampaign'
             updated_staged_code = service.update_stage(
-                listing["id"], listing["stage_code"].upper()
+                listing["id"], identity
             )
             print(
                 "listing id -'{0}' moved from '{1}' to '{2}'".format(
