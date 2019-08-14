@@ -32,7 +32,7 @@ def prepare_payload(address, contacts, primary_agent):
 def main(event, context):
 
     wb = load_workbook(filename=EXCEL_PATH)
-    ws = wb["Sheet3"]
+    ws = wb["staging_sold"]
 
     #want to get every row use 'ws.max_row' instead of 'Limit'
     min_row=2
@@ -53,7 +53,7 @@ def main(event, context):
         # lst[7]=body value
 
         if lst[0] != None and lst[1] != None and lst[2] != None:
-
+            print(lst[0],lst[1],lst[2])
             args, identity = prepare_payload(
                 json.loads(lst[0]),
                 json.loads(lst[1]),

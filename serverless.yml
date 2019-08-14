@@ -63,7 +63,7 @@ provider:
     IDENTITY_EMAIL: jono@avnu.com.au
     TEAM_NAME: nick.gittoes
     THUMBNAIL_IMAGEURL: https://avnu.com.au/wp-content/uploads/2019/03/39241-hires_e1c1-581f-55fc-6b5c-38fe-fd70-9144-7ed3_20190307012100-400x300.jpg
-    EXCEL_PATH: RexImport.xlsx
+    EXCEL_PATH: RI.xlsx
     SIZE: 5
 functions:
   index:
