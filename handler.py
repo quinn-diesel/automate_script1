@@ -2,6 +2,7 @@ from openpyxl import load_workbook
 import json
 import os
 import service
+import time
 
 EXCEL_PATH = os.getenv("EXCEL_PATH")
 SIZE= os.getenv("SIZE")
@@ -32,12 +33,12 @@ def prepare_payload(address, contacts, primary_agent):
 def main(event, context):
 
     wb = load_workbook(filename=EXCEL_PATH)
-    ws = wb["staging_sold"]
+    ws = wb["mulit_test"]
 
     #want to get every row use 'ws.max_row' instead of 'Limit'
     min_row=2
     max_row=int(SIZE)+int(min_row)-1
-    for row in ws.iter_rows(min_row=min_row, min_col=1, max_row=max_row, max_col=8):#want to get every row use 'ws.max_row'
+    for row in ws.iter_rows(min_row=min_row, min_col=1, max_row=max_row, max_col=15):#want to get every row use 'ws.max_row'
         lst = []
         for cell in row:
 
@@ -51,6 +52,10 @@ def main(event, context):
         # lst[5]=car value
         # lst[6]=headline value
         # lst[7]=body value
+        # list[8]=listed date
+        # lst[9]=authority
+        # list[10]=price_advertised_as
+        # lst[11]=price match as
 
         if lst[0] != None and lst[1] != None and lst[2] != None:
             print(lst[0],lst[1],lst[2])
@@ -88,7 +93,9 @@ def main(event, context):
                 identity,
             )
 
-            # moving stage from 'opportunity to 'precampaign'
+            time.sleep(2)
+
+            # # moving stage from 'opportunity to 'precampaign'
             updated_staged_code = service.update_stage(
                 listing["id"], identity
             )
@@ -116,4 +123,11 @@ def main(event, context):
             if lst[6] != None or lst[7] != None:
                 service.set_headline_and_body_to_rex(rex_listing_id, lst[6], lst[7])
 
+            if lst[8] != None or lst[9] != None:
+                service.set_listing_details_to_rex(rex_listing_id, date_listed=lst[8], authority=lst[9])
+
+            if lst[10] != None or lst[11] != None:
+                service.set_price_to_rex(rex_listing_id, lst[10], lst[11])
+
+    
         print("\n--------------------------------------------------------\n")

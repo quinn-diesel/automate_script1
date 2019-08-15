@@ -25,19 +25,19 @@ provider:
       Action:
         - lambda:InvokeFunction
         - lambda:InvokeAsync
-      Resource: '*'
-    - Effect: 'Allow'
+      Resource: "*"
+    - Effect: "Allow"
       Action:
-        - 'es:ESHttpPut'
-        - 'es:ESHttpPost'
-        - 'es:ESHttpHead'
-        - 'es:ESHttpGet'
-        - 'es:ESHttpDelete'
-      Resource: '*'
+        - "es:ESHttpPut"
+        - "es:ESHttpPost"
+        - "es:ESHttpHead"
+        - "es:ESHttpGet"
+        - "es:ESHttpDelete"
+      Resource: "*"
     - Effect: Allow
       Action:
         - sns:publish
-      Resource: '*'
+      Resource: "*"
   environment:
     DEPLOYMENT_STAGE: ${self:provider.stage}
     LISTINGS_TABLE_NAME: ${self:resources.Resources.DynamoTable.Properties.TableName}
@@ -47,14 +47,14 @@ provider:
     LISTINGS_INDEX_NAME: listings-${self:provider.stage}
     PROFILE_LAMBDA: auth-profile-${self:provider.stage}-admin
     LISTING_CREATED_TOPIC_ARN: arn:aws:sns:#{AWS::Region}:#{AWS::AccountId}:listing-created-${self:provider.stage}
-    ADMIN_ACCOUNTS: 'backoffice,admin'
+    ADMIN_ACCOUNTS: "backoffice,admin"
     AGENT_LISTING_SIZE: 500
     VENDOR_LISTING_SIZE: 500
     AGENTS_LAMBDA: agents-${self:provider.stage}-index
     OFI_SERVICE_LAMBDA: ofi-${self:provider.stage}-index
     LISTING_ID_MAPPING_LAMBDA: listing-id-mapping-${self:provider.stage}-index
     REX_USER_NAME: v_shiva@ljx.com.au
-    REX_PASSWORD : shivaReddy@970
+    REX_PASSWORD: shivaReddy@970
     REX_POLLING_RATE_IN_MINS: 60
     LISTING_FILES_INDEX_LAMDA: listing-files-${self:provider.stage}-2-index
     LISTING_AGENCY_AGREEMENTS_INDEX_LAMDA: listing-agency-agreements-${self:provider.stage}-index
@@ -63,8 +63,8 @@ provider:
     IDENTITY_EMAIL: jono@avnu.com.au
     TEAM_NAME: nick.gittoes
     THUMBNAIL_IMAGEURL: https://avnu.com.au/wp-content/uploads/2019/03/39241-hires_e1c1-581f-55fc-6b5c-38fe-fd70-9144-7ed3_20190307012100-400x300.jpg
-    EXCEL_PATH: RI.xlsx
-    SIZE: 5
+    EXCEL_PATH: rex_import.xlsx
+    SIZE: 100000
 functions:
   index:
     handler: handler.main
@@ -102,7 +102,7 @@ functions:
 
 custom:
   logForwarding:
-    destinationARN: 'arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:logforwarder'
+    destinationARN: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:logforwarder"
   ess: ${file(./env/${self:provider.stage}.yml):es.url}
   exportGitVariables: false
   autoScalingEnabled: ${file(./env/${self:provider.stage}.yml):dynamo.table.AutoScalingEnabled}
@@ -155,8 +155,7 @@ package:
 plugins:
   - serverless-plugin-git-variables
   - serverless-python-requirements
-  - '@ljxau/serverless-dynamodb-autoscaling'
+  - "@ljxau/serverless-dynamodb-autoscaling"
   - serverless-plugin-aws-resolvers
   - serverless-log-forwarding
   - serverless-pseudo-parameters
-  

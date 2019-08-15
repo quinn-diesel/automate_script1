@@ -28,6 +28,7 @@ PROFILE_LAMBDA = os.getenv("PROFILE_LAMBDA")
 AGENTS_LAMBDA = os.getenv("AGENTS_LAMBDA")
 LISTINGS_TASKS_LAMBDA=os.getenv('LISTINGS_TASKS_LAMBDA')
 
+
 sns_client = boto3.client("sns")
 logger = logging.getLogger()
 
@@ -126,7 +127,7 @@ def update_stage(listing_id, identity):
 
     #updating stage
     return call_service(
-        LISTINGS_TASKS_LAMBDA, identity, "completeStage", {"listingId": listing_id}
+        LISTINGS_TASKS_LAMBDA, identity, "completeStage", {"listingId": listing_id, "skipNotification": True}
     )['code']
 
 
@@ -221,3 +222,10 @@ def update_property_details_in_rex(rex_listing_id, identity, agents, bed, bath, 
 
 def set_headline_and_body_to_rex(rex_listing_id,headline,body):
     return l_api.set_headline_and_body(rex_listing_id,headline,body)
+
+
+def set_price_to_rex(rex_listing_id, price_advertise_as, price_match_as):
+    return l_api.set_price(rex_listing_id, price_advertise_as, price_match_as)
+
+def set_listing_details_to_rex(rex_listing_id, date_listed, authority):
+    return l_api.set_listing_details(rex_listing_id, date_listed, authority)
