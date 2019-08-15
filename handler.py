@@ -33,7 +33,7 @@ def prepare_payload(address, contacts, primary_agent):
 def main(event, context):
 
     wb = load_workbook(filename=EXCEL_PATH)
-    ws = wb["mulit_test"]
+    ws = wb["single_test"]
 
     #want to get every row use 'ws.max_row' instead of 'Limit'
     min_row=2
@@ -129,5 +129,5 @@ def main(event, context):
             if lst[10] != None or lst[11] != None:
                 service.set_price_to_rex(rex_listing_id, lst[10], lst[11])
 
-    
+
         print("\n--------------------------------------------------------\n")

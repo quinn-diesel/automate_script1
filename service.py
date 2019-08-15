@@ -101,7 +101,7 @@ def create_listing(args, identity):
         listing.agent_usernames = [get_email(identity)]
     listing.save()
     sns_client.publish(
-        TopicArn='arn:aws:sns:ap-southeast-2:529618128667:listing-created-dev',
+        TopicArn='arn:aws:sns:ap-southeast-2:392147625287:listing-created-staging',
         Message=json.dumps(
             {"listingId": listing.id, "fullAddress": listing.address.full_address}
         ),
@@ -228,4 +228,4 @@ def set_price_to_rex(rex_listing_id, price_advertise_as, price_match_as):
     return l_api.set_price(rex_listing_id, price_advertise_as, price_match_as)
 
 def set_listing_details_to_rex(rex_listing_id, date_listed, authority):
-    return l_api.set_listing_details(rex_listing_id, date_listed, authority)
+    return l_api.set_listing_details(rex_listing_id, date_listed=date_listed, authority=authority)
