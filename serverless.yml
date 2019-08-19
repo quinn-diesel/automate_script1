@@ -3,7 +3,7 @@ provider:
   name: aws
   runtime: python3.6
   region: ap-southeast-2
-  stage: ${opt:stage,'staging'}
+  stage: ${opt:stage,'dev'}
   memorySize: 128
   iamRoleStatements:
     - Effect: Allow
@@ -53,8 +53,8 @@ provider:
     AGENTS_LAMBDA: agents-${self:provider.stage}-index
     OFI_SERVICE_LAMBDA: ofi-${self:provider.stage}-index
     LISTING_ID_MAPPING_LAMBDA: listing-id-mapping-${self:provider.stage}-index
-    REX_USER_NAME: v_shiva@ljx.com.au
-    REX_PASSWORD: shivaReddy@970
+    REX_USER_NAME: ajeya@avnu.com.au
+    REX_PASSWORD: rovQJfBp3PbfCxDqnvkMouUZ
     REX_POLLING_RATE_IN_MINS: 60
     LISTING_FILES_INDEX_LAMDA: listing-files-${self:provider.stage}-2-index
     LISTING_AGENCY_AGREEMENTS_INDEX_LAMDA: listing-agency-agreements-${self:provider.stage}-index

@@ -7,13 +7,14 @@ import time
 EXCEL_PATH = os.getenv("EXCEL_PATH")
 SIZE= os.getenv("SIZE")
 
-def prepare_payload(address, contacts, primary_agent):
+def prepare_payload(address, contacts, primary_agent, secondary_agent):
     payload = {
         "arguments": {
             "input": {
                 "address": address,
                 "contacts": [contacts],
                 "primary_agent": primary_agent,
+                "secondary_agent": secondary_agent
             }
         },
         "identity": {
@@ -58,14 +59,12 @@ def main(event, context):
         # lst[11]=price match as
 
         if lst[0] != None and lst[1] != None and lst[2] != None:
-            print(lst[0],lst[1],lst[2])
-
-            primary_agent = json.loads(lst[2])["primaryAgent"]
-
+            print(lst[0],lst[1],lst[2], lst[2])
             args, identity = prepare_payload(
                 json.loads(lst[0]),
                 json.loads(lst[1]),
-                primary_agent,
+                json.loads(lst[2])["primaryAgent"],
+                json.loads(lst[2])["secondaryAgent"],
             )
 
             # creating a listing in agent_portal
@@ -75,9 +74,6 @@ def main(event, context):
                     listing["id"], listing["address"]["full_address"]
                 )
             )
-
-            print(listing)
-
             # updating bed,bath,car in agent_portal
             property_details = listing["property_details"]
             property_details["bedrooms"] = int(lst[3])
@@ -99,24 +95,25 @@ def main(event, context):
                 identity,
             )
 
-            time.sleep(4)
+            time.sleep(2)
 
             # # moving stage from 'opportunity to 'precampaign'
-            updated_staged_code = service.update_stage(
-                listing["id"], identity
-            )
+            # updated_staged_code = service.update_stage(
+            #     listing["id"], identity
+            # )
+            # print(
+            #     "listing id -'{0}' moved from '{1}' to '{2}'".format(
+            #         listing["id"], listing["stage_code"], updated_staged_code
+            #     )
+            # )
             print(
                 "listing id -'{0}' moved from '{1}' to '{2}'".format(
-                    listing["id"], listing["stage_code"], updated_staged_code
+                    listing["id"]
                 )
             )
-            
-            #find rex office
-
-            rex_office_select = service.switch_office(primary_agent)
 
             # creating listing in rex
-            rex_listing_id = service.create_listing_in_rex(listing["id"])
+            # rex_listing_id = service.create_listing_in_rex(listing["id"])
             print("listing created in rex with id - ", rex_listing_id)
 
             # moving agents,bed,bath,car to rex_listing_id
@@ -130,14 +127,14 @@ def main(event, context):
             )
 
             # updating headline and body only if one of the value is given
-            if lst[6] != None or lst[7] != None:
-                service.set_headline_and_body_to_rex(rex_listing_id, lst[6], lst[7])
+            # if lst[6] != None or lst[7] != None:
+            #     service.set_headline_and_body_to_rex(rex_listing_id, lst[6], lst[7])
 
-            if lst[8] != None or lst[9] != None:
-                service.set_listing_details_to_rex(rex_listing_id, date_listed=lst[8], authority=lst[9])
+            # if lst[8] != None or lst[9] != None:
+            #     service.set_listing_details_to_rex(rex_listing_id, date_listed=lst[8], authority=lst[9])
 
-            if lst[10] != None or lst[11] != None:
-                service.set_price_to_rex(rex_listing_id, lst[10], lst[11])
+            # if lst[10] != None or lst[11] != None:
+            #     service.set_price_to_rex(rex_listing_id, lst[10], lst[11])
 
 
-        # print("\n----- fin -----\n")
+        # print("\n--------------------------------------------------------\n")

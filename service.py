@@ -101,7 +101,7 @@ def create_listing(args, identity):
         listing.agent_usernames = [get_email(identity)]
     listing.save()
     sns_client.publish(
-        TopicArn='arn:aws:sns:ap-southeast-2:392147625287:listing-created-staging',
+        TopicArn='arn:aws:sns:ap-southeast-2:889389499482:listing-created-prod',
         Message=json.dumps(
             {"listingId": listing.id, "fullAddress": listing.address.full_address}
         ),
@@ -229,3 +229,19 @@ def set_price_to_rex(rex_listing_id, price_advertise_as, price_match_as):
 
 def set_listing_details_to_rex(rex_listing_id, date_listed, authority):
     return l_api.set_listing_details(rex_listing_id, date_listed=date_listed, authority=authority)
+
+
+
+def switch_office(email_id):
+    if email_id is not None:
+        agent = call_service(AGENTS_LAMBDA, {}, "getAgent", {"email": email_id})
+        if "officeId" in agent:
+            office = call_service(
+                AGENTS_LAMBDA, {}, "getOffice", {"id": agent["officeId"]}
+            )
+        ofc = office["name"]
+    ofc_id = u_api.get_office_id(ofc)
+    if ofc_id is None:
+        return None
+    return CLIENT.switch_account(ofc_id)
+
