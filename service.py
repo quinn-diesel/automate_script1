@@ -245,3 +245,52 @@ def switch_office(email_id):
         return None
     return CLIENT.switch_account(ofc_id)
 
+
+
+def get_property_id_by_address(address):
+    """
+    get Property by passing  address,it returns property id
+    if address is unique and aleredy exists.
+    else it will return error
+        :param address:full adddress of the property
+    :type address:str
+    :rtype : int
+    """
+
+    data = {"search_string": str(address), "limit": 1}
+    properties = CLIENT.request("Properties::autocomplete", data)
+    if(properties['result'] != None):
+        return properties["result"][0]["_id"]
+    return None
+
+
+def get_listing(full_address):
+    """
+    To fetch current listing
+
+    :type full_address:str address of current listing
+    """
+    data = {
+        "requests": {
+            "CURRENT_LISTING": {
+                "method": "Listings::autocomplete",
+                "args": {"listing_states": ["current"]},
+            }
+        },
+        "shared_args": {"search_string": full_address, "limit": 1},
+    }
+    # with 'Listings::autocomplete' service we are not able to add args thats why i am calling BatchRequest
+    return CLIENT.request("BatchRequests::execute", data)
+
+def transfer_ownership(property_id, owner_id, raw=False, execute=True):
+    data = {
+        "object_type": "properties",
+        "object_id": property_id,
+        "new_owner_id": owner_id,
+    }
+    return ('SecurityObjectPermissions::transferObjectOwnershipToUser', data)
+
+
+def get_owner_id(c contact_id: int, raw=False, execute=True):
+    data = {'id': int(contact_id)}
+    return ('Contacts::read', data)

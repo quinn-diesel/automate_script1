@@ -33,10 +33,10 @@ def prepare_payload(address, contacts, primary_agent):
 def main(event, context):
 
     wb = load_workbook(filename=EXCEL_PATH)
-    ws = wb["single_test"]
+    ws = wb["under_contract"]
 
     #want to get every row use 'ws.max_row' instead of 'Limit'
-    min_row=2
+    min_row=2   
     max_row=int(SIZE)+int(min_row)-1
     for row in ws.iter_rows(min_row=min_row, min_col=1, max_row=max_row, max_col=15):#want to get every row use 'ws.max_row'
         lst = []
